@@ -19,13 +19,19 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    # Устанавливаем Android SDK и конкретную версию Build Tools
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        cmdline-tools-version: 'latest'
+        accept-android-sdk-licenses: true
+        packages: 'platforms;android-34 build-tools;34.0.0'
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
     - name: Build with Gradle
-      run: |
-        echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-        gradle assembleDebug
+      run: gradle assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
