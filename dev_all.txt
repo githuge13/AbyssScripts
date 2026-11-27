@@ -1,0 +1,86 @@
+var docs = [{name:'TOP', doc:document}];
+[].forEach.call(document.querySelectorAll('iframe'), function(f, i){
+  try {
+    if (f.contentDocument) docs.push({name:'FRAME'+i+' '+f.src, doc:f.contentDocument});
+  } catch(e) {
+    docs.push({name:'FRAME'+i+' CLOSED '+f.src, doc:null});
+  }
+});
+
+var res = {
+  url: location.href,
+  cf: window.__CF ? {
+    ready: true, enabled: __CF.enabled, board: !!__CF.board,
+    side: __CF.side, my: __CF.myColor, locked: __CF.teamLocked,
+    manual: __CF.manualTeam, status: __CF.status, hint: __CF.hint,
+    engine: !!window.__sfOnMessage
+  } : {ready:false},
+  me: [].map.call(document.querySelectorAll('a[href],[class*=profile],[class*=avatar]'), function(n){
+    var r = n.getBoundingClientRect ? n.getBoundingClientRect() : {top:9999};
+    if (r.top > 160) return null;
+    var imgs = [].map.call(n.querySelectorAll ? n.querySelectorAll('img') : [], function(i){
+      return i.getAttribute('src') || i.src || '';
+    });
+    return {tag:n.tagName, id:n.id||'', cls:(''+n.className).slice(0,120),
+            href:n.getAttribute?n.getAttribute('href'):'', imgs:imgs.slice(0,4)};
+  }).filter(Boolean).slice(0,12),
+  players: [].map.call(document.querySelectorAll('[class*=player-row],[id^=player-]'), function(p){
+    var r = p.getBoundingClientRect();
+    var imgs = [].map.call(p.querySelectorAll('img'), function(i){
+      return i.getAttribute('src') || i.src || '';
+    });
+    return {id:p.id||'', cls:(''+p.className).slice(0,160),
+            text:(p.textContent||'').replace(/\s+/g,' ').trim().slice(0,120),
+            y:Math.round(r.top), imgs:imgs.slice(0,4)};
+  }).slice(0,12),
+  docs: [],
+  testHint: null
+};
+
+docs.forEach(function(o){
+  var d = o.doc;
+  var e = {name:o.name};
+  if (!d) { e.error = 'cross-origin'; res.docs.push(e); return; }
+
+  e.sel = {};
+  ['cg-board','.cg-board','chess-board','[class*=board]',
+   'piece','.piece','[class*=piece]'].forEach(function(s){
+    var n = d.querySelectorAll(s).length;
+    if (n) e.sel[s] = n;
+  });
+
+  e.boards = [];
+  [].forEach.call(d.querySelectorAll('cg-board,[class*=board],chess-board'), function(b){
+    var r = b.getBoundingClientRect();
+    if (r.width > 40) e.boards.push({
+      tag: b.tagName,
+      cls: b.className,
+      parent: b.parentElement ? b.parentElement.className : '',
+      w: Math.round(r.width), h: Math.round(r.height),
+      pieces: b.querySelectorAll('piece').length,
+      html: b.outerHTML.slice(0, 260)
+    });
+  });
+
+  e.samples = [].slice.call(d.querySelectorAll('piece,.piece')).slice(0, 6).map(function(p){
+    return p.tagName+' '+p.className+' | '+(p.getAttribute('style')||'');
+  });
+
+  res.docs.push(e);
+});
+
+try {
+  res.testHint = window.__CF ? window.__CF.testHint('e2e4') : 'no __CF';
+} catch(err) {
+  res.testHint = 'ERR '+err;
+}
+
+var nb = 0, np = 0;
+res.docs.forEach(function(e){
+  if (!e.boards) return;
+  nb += e.boards.length;
+  e.boards.forEach(function(b){ np += b.pieces; });
+});
+res.summary = 'docs='+res.docs.length+' boards='+nb+' pieces='+np+' cf='+!!res.cf.board;
+
+return res;
